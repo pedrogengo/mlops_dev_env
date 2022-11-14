@@ -1,0 +1,8 @@
+# exclusions
+*/credentials/**
+__pycache__
+.ipynb_checkpoints
+
+
+
+!*/credentials/.gitkeep
