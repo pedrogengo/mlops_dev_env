@@ -18,3 +18,5 @@ if uploaded_file is not None:
             file_name='predicted.csv',
             mime='text/csv',
         )
+    else:
+        st.text(r.content)
