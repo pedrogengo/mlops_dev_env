@@ -1,0 +1,7 @@
+# Function dependencies, for example:
+# package>=version
+flask
+google-cloud-storage
+numpy
+joblib
+scikit-learn

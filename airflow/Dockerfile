@@ -1,5 +1,5 @@
 # Base Image
-FROM --platform=$BUILDPLATFORM python:latest
+FROM --platform=$BUILDPLATFORM python:3.9.15
 LABEL maintainer="MarcLamberti"
 
 # Arguments that can be set with docker build
@@ -40,8 +40,8 @@ RUN apt-get update -y && \
 # Install apache airflow with subpackages
 RUN pip install --upgrade pip
 RUN useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow
-RUN pip install apache-airflow
-RUN pip install numpy scipy pandas pymysql mysql-connector-python
+RUN pip install apache-airflow mlflow
+RUN pip install numpy scipy pandas pymysql mysql-connector-python scikit-learn google-cloud-storage
 
 # Copy the airflow.cfg file (config)
 #COPY ./config/airflow.cfg ${AIRFLOW_HOME}/airflow.cfg
@@ -50,6 +50,7 @@ RUN pip install numpy scipy pandas pymysql mysql-connector-python
 RUN chown -R airflow: ${AIRFLOW_HOME}
 
 # Copy the entrypoint.sh from host to container (at path AIRFLOW_HOME)
+COPY ./credentials ./credentials
 COPY ./start-airflow.sh ./start-airflow.sh
 
 # Set the entrypoint.sh file to be executable
@@ -63,4 +64,3 @@ RUN mkdir -p ${AIRFLOW_HOME}/dags
 
 # Expose ports (just to indicate that this container needs to map port)
 EXPOSE 8080
-    

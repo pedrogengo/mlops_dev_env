@@ -23,19 +23,17 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
-    # environment:
-    #   - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/mlflow_service_account.json
     networks:
       - public
       - internal
-    entrypoint: mlflow server --backend-store-uri mysql+pymysql://mlflow_user:mlflow_password@db:3306/mlflow --default-artifact-root gs://mlops-mlflow-artifacts/ --artifacts-destination gs://mlops-mlflow-artifacts/ -h 0.0.0.0
+    entrypoint: mlflow server --backend-store-uri mysql+pymysql://mlflow_user:mlflow_password@db:3306/mlflow --default-artifact-root gs://${ARTIFACT_BUCKET}/ --artifacts-destination gs://${ARTIFACT_BUCKET}/ -h 0.0.0.0
     depends_on:
       wait-for-db:
         condition: service_completed_successfully
   
   airflow:
     container_name: airflow
-    # restart: always
+    restart: unless-stopped
     build:
       context: ./airflow
       dockerfile: Dockerfile
@@ -49,6 +47,8 @@ services:
       interval: 10s
       retries: 10
     entrypoint: ./start-airflow.sh
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials/${SERVICE_ACCOUNT}
     networks:
       - public
       - internal
@@ -64,13 +64,14 @@ services:
       context: ./src
       dockerfile: Dockerfile
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/mlflow_service_account.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/${SERVICE_ACCOUNT}
     ports:
-      - "8888:8888"
+      - "8888:8888"  # Access jupyter
+      - "8501:8501"  # Access streamlit
     networks:
       - public
       - internal
-    entrypoint: jupyter notebook --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
+    entrypoint: bash -c "streamlit run streamlit/ui.py & jupyter notebook --ip 0.0.0.0 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''"
     volumes:
       - ./src/:/app
     depends_on:
