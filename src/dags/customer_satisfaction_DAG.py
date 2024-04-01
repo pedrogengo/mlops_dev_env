@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from airflow import DAG, AirflowException
 from airflow.models import Variable
 from airflow import AirflowException
-
+from airflow.models.param import Param
 from airflow.operators.python_operator import PythonOperator
 
 import mlflow
@@ -28,7 +28,7 @@ def task_to_fail():
     raise AirflowException("Please change this step to success to continue")
 
 
-def split_train_test(test_ratio=.33, **kwargs):
+def split_train_test(dataset_path, test_ratio=.33, **kwargs):
     """
     Splits a dataset in train and test sets
     """
@@ -36,7 +36,7 @@ def split_train_test(test_ratio=.33, **kwargs):
     run_name = kwargs['ti'].xcom_pull(task_ids='generate_uuid')
     print("run_name:", run_name)
 
-    gcs_path = kwargs['dag_run'].conf.get('dataset_path')
+    gcs_path = dataset_path
 
     splitted_path = gcs_path.replace('gs://', '').split('/')
     bucket_name = splitted_path[0]
@@ -59,7 +59,7 @@ def split_train_test(test_ratio=.33, **kwargs):
         upload_from_string(df_test.to_csv(index=False), 'text/csv')
 
 
-def train(**kwargs):
+def train(max_depth, **kwargs):
     """"
     Train a Randon Forest Model logging params and metrics to MLFlow
     and saving the model on Google Storage
@@ -89,9 +89,7 @@ def train(**kwargs):
         X_test = df_test.drop(columns=['TARGET'])
         y_test = df_test['TARGET']
 
-        max_depth = kwargs['dag_run'].conf.get('max_depth')
-
-        rf = RandomForestClassifier(max_depth=max_depth)
+        rf = RandomForestClassifier(max_depth=int(max_depth))
         log_param("Model", "RandomForestClassifier")
         log_param("max_depth", max_depth)
 
@@ -133,6 +131,10 @@ default_args = {
 
 with DAG(start_date=datetime(2022, 11, 15),
          dag_id='customer_satisfaction',
+         params={
+            "dataset_path": Param("", type="string"),
+            "max_depth": Param(1, type="integer")
+         },
          schedule_interval=None,
          default_args=default_args,
          catchup=False
@@ -147,6 +149,9 @@ with DAG(start_date=datetime(2022, 11, 15),
     opr_split_train_test = PythonOperator(
         dag=dag,
         task_id = 'split_train_test',
+        op_kwargs = {
+            "dataset_path": "{{ params.dataset_path }}"
+        },
         python_callable=split_train_test,
         provide_context=True,
     )
@@ -154,6 +159,9 @@ with DAG(start_date=datetime(2022, 11, 15),
     opr_train_random_forest = PythonOperator(
         dag=dag,
         task_id = 'train_random_forest',
+        op_kwargs = {
+            "max_depth": "{{ params.max_depth }}"
+        },
         python_callable=train,
         provide_context=True,
     )

@@ -48,7 +48,7 @@ You can modify as you want, but to delivery a start point we bring a toy example
 5. Click in **ADD KEY** > **Create new key** > **JSON**. A file will be downloaded in your machine.
 6. Copy this file and paste inside credentials folder in `airflow/creadentials` and `src/credentials`.
 7. Go to [.env](./.env) and change replace \<YOUR SERVICE ACCOUNT FILE NAME\>, like: <YOUR SERVICE ACCOUNT FILE NAME\> -> my_service_account.json
-8. Now, go back to GCP console and create a bucket.
+8. Now, go back to GCP console and create a bucket. You should create it with public access or grant permissions for the service account you created before.
 9. Copy the name and replace it inside [.env](./.env).
 10. In GCP Console again, go to Cloud Functions > Create Function (on the top). Choose a name for your function. On Trigger Section, select HTTPS, mark *Allow unauthenticated invocations* and disable *Require HTTPS*.
 
@@ -70,7 +70,7 @@ Expand *Runtime, build, connections and security settings* section. In *Runtime 
 
 Now that everything is up running we can start to play! To do that, open your Airflow UI at `http://localhost:8080` (username and password is *airflow*) and your MLFlow server at `http://localhost:5000`.
 
-Before everything, go to the bucket you created and upload the file `/bases/train.csv` to there. We will use it to trigger Airflow.
+Before everything, go to the bucket you created and upload the file `/bases/train.csv` to there. We will use it to trigger Airflow. After that, go to Airflow, click on Admin > Variables and create a variable called `artifact_bucket` and the value is the name of your bucket.
 
 In Airflow, you should see a DAG called **customer_satisfaction**. Click on the start button on the right and select **Trigger DAG w/ config**:
 

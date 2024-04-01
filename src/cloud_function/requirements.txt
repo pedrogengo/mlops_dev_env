@@ -1,6 +1,6 @@
 # Function dependencies, for example:
 # package>=version
-flask
+flask<3.0
 google-cloud-storage
 numpy
 joblib
